@@ -1,0 +1,406 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ShoppingCart, Heart, Search, Star, User, Plus, Trash, Home, Tag, Truck, MessageCircle } from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function HomeDecoreStore() {
+  const ADMIN_EMAIL = "admin@homedecore.com";
+
+  const deliveryPartners = [
+    { name: "Ravi Delivery", phone: "9876543210" },
+    { name: "FastShip Logistics", phone: "9123456780" },
+    { name: "QuickExpress", phone: "9988776655" }
+  ];
+
+  const [products, setProducts] = useState(() => {
+    const saved = localStorage.getItem("products");
+    return saved
+      ? JSON.parse(saved)
+      : [
+          {
+            id: 1,
+            name: "Modern Table Lamp",
+            price: 899,
+            category: "Lighting",
+            rating: 4.5,
+            image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c",
+            description: "Elegant modern lamp perfect for bedrooms and living rooms."
+          },
+          {
+            id: 2,
+            name: "Wood Wall Shelf",
+            price: 1299,
+            category: "Furniture",
+            rating: 4.2,
+            image: "https://images.unsplash.com/photo-1618220179428-22790b461013",
+            description: "Premium wooden shelf for stylish wall storage."
+          },
+          {
+            id: 3,
+            name: "Decor Plant Pot",
+            price: 499,
+            category: "Decor",
+            rating: 4.7,
+            image: "https://images.unsplash.com/photo-1501004318641-b39e6451bec6",
+            description: "Beautiful decorative pot for indoor plants."
+          }
+        ];
+  });
+
+  const [orders, setOrders] = useState(() => {
+    const saved = localStorage.getItem("orders");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [users, setUsers] = useState(() => {
+    const saved = localStorage.getItem("users");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [viewProduct, setViewProduct] = useState(null);
+  const [checkout, setCheckout] = useState(false);
+
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [cart, setCart] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+
+  const [coupon, setCoupon] = useState("");
+  const [discount, setDiscount] = useState(0);
+
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  const [paymentMethod, setPaymentMethod] = useState("UPI");
+
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [messages, setMessages] = useState([
+    { from: "bot", text: "Hi 👋 I am Home Decore AI. Ask me about products." }
+  ]);
+
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    price: "",
+    category: "",
+    image: "",
+    description: ""
+  });
+
+  useEffect(() => {
+    localStorage.setItem("products", JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem("orders", JSON.stringify(orders));
+  }, [orders]);
+
+  useEffect(() => {
+    localStorage.setItem("users", JSON.stringify(users));
+  }, [users]);
+
+  const categories = ["All", ...new Set(products.map((p) => p.category))];
+
+  const addToCart = (product) => setCart([...cart, product]);
+  const addToWishlist = (product) => setWishlist([...wishlist, product]);
+
+  const handleSignup = () => {
+    if (!email || !phone || !address) return alert("Fill all details");
+
+    const user = { email, phone, address };
+
+    setUsers([...users, user]);
+    setLoggedIn(true);
+
+    if (email === ADMIN_EMAIL) setIsAdmin(true);
+  };
+
+  const handleLogin = () => {
+    const user = users.find((u) => u.email === email);
+
+    if (!user) return alert("User not found. Please sign up.");
+
+    setPhone(user.phone);
+    setAddress(user.address);
+
+    setLoggedIn(true);
+
+    if (email === ADMIN_EMAIL) setIsAdmin(true);
+  };
+
+  const applyCoupon = () => {
+    if (coupon === "SAVE10") setDiscount(0.1);
+    if (coupon === "SAVE20") setDiscount(0.2);
+  };
+
+  const placeOrder = () => {
+    const total = cart.reduce((t, p) => t + Number(p.price), 0);
+    const finalTotal = total - total * discount;
+
+    const partner = deliveryPartners[Math.floor(Math.random() * deliveryPartners.length)];
+
+    const newOrder = {
+      id: Date.now(),
+      items: cart,
+      total: finalTotal,
+      address,
+      phone,
+      payment: paymentMethod,
+      status: "Processing",
+      partner,
+      date: new Date().toLocaleDateString()
+    };
+
+    setOrders([...orders, newOrder]);
+
+    setTimeout(() => updateOrderStatus(newOrder.id, "Shipped"), 5000);
+    setTimeout(() => updateOrderStatus(newOrder.id, "Out for Delivery"), 10000);
+    setTimeout(() => updateOrderStatus(newOrder.id, "Delivered"), 15000);
+
+    alert(`Order confirmed! Confirmation email sent to ${email}`);
+
+    setCart([]);
+    setCheckout(false);
+  };
+
+  const updateOrderStatus = (orderId, status) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+  };
+
+  const addProduct = () => {
+    if (!newProduct.name) return;
+
+    const product = {
+      ...newProduct,
+      id: Date.now(),
+      rating: 4
+    };
+
+    setProducts([...products, product]);
+
+    setNewProduct({ name: "", price: "", category: "", image: "", description: "" });
+  };
+
+  const deleteProduct = (id) => {
+    setProducts(products.filter((p) => p.id !== id));
+  };
+
+  const sendMessage = () => {
+    if (!chatInput) return;
+
+    const userMsg = { from: "user", text: chatInput };
+
+    let reply = "I can help you find decor products.";
+
+    const found = products.find((p) =>
+      p.name.toLowerCase().includes(chatInput.toLowerCase())
+    );
+
+    if (found) reply = `We have ${found.name} for ₹${found.price}`;
+
+    const botMsg = { from: "bot", text: reply };
+
+    setMessages([...messages, userMsg, botMsg]);
+    setChatInput("");
+  };
+
+  const filtered = products
+    .map((p) => {
+      const text = (p.name + " " + p.category + " " + p.description).toLowerCase();
+      const query = search.toLowerCase();
+      let score = 0;
+
+      if (text.includes(query)) score += 3;
+      if (p.name.toLowerCase().includes(query)) score += 5;
+      if (p.category.toLowerCase().includes(query)) score += 2;
+
+      return { ...p, score };
+    })
+    .filter((p) => {
+      const matchCategory = selectedCategory === "All" || p.category === selectedCategory;
+      const matchSearch = search === "" || p.score > 0;
+      return matchCategory && matchSearch;
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const totalRevenue = orders.reduce((t, o) => t + o.total, 0);
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+
+      <div className="bg-white shadow p-4 flex justify-between items-center">
+
+        <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white w-10 h-10 flex items-center justify-center rounded-xl shadow">
+            <Home size={20} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Home Decore</h1>
+            <p className="text-xs text-gray-500">Style Your Space</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 w-1/2">
+          <Search size={18} />
+          <Input placeholder="AI Smart Search products..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+
+        <div className="flex items-center gap-5">
+
+          <div className="flex items-center gap-1">
+            <Heart size={18} /> {wishlist.length}
+          </div>
+
+          <div className="flex items-center gap-1">
+            <ShoppingCart size={18} /> {cart.length}
+          </div>
+
+          {cart.length > 0 && <Button onClick={() => setCheckout(true)}>Checkout</Button>}
+
+          {!loggedIn ? (
+            <div className="flex gap-2">
+              <Input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+
+              {showSignup && (
+                <>
+                  <Input placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <Input placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+                </>
+              )}
+
+              {showSignup ? (
+                <Button onClick={handleSignup}>Sign Up</Button>
+              ) : (
+                <Button onClick={handleLogin}>Login</Button>
+              )}
+
+              <Button variant="outline" onClick={() => setShowSignup(!showSignup)}>
+                {showSignup ? "Login" : "Signup"}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <User size={18} /> Account
+
+              {isAdmin && <Button onClick={() => setShowAdmin(!showAdmin)}>Admin</Button>}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-12 text-center">
+        <h2 className="text-4xl font-bold">Beautiful Home Decor</h2>
+        <p className="text-lg">Upgrade your home with modern style</p>
+      </div>
+
+      <div className="flex gap-3 overflow-x-auto p-4 justify-center bg-white shadow">
+        {categories.map((cat) => (
+          <Button key={cat} variant={selectedCategory === cat ? "default" : "outline"} onClick={() => setSelectedCategory(cat)}>
+            {cat}
+          </Button>
+        ))}
+      </div>
+
+      {showAdmin && isAdmin && (
+        <div className="p-8 bg-white shadow m-6 rounded-2xl">
+          <h2 className="text-2xl font-bold mb-4">Admin Dashboard</h2>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <Card><CardContent className="p-4">Products: {products.length}</CardContent></Card>
+            <Card><CardContent className="p-4">Orders: {orders.length}</CardContent></Card>
+            <Card><CardContent className="p-4">Revenue: ₹{totalRevenue}</CardContent></Card>
+          </div>
+
+          <div className="grid md:grid-cols-5 gap-3">
+            <Input placeholder="Name" value={newProduct.name} onChange={(e)=>setNewProduct({...newProduct,name:e.target.value})}/>
+            <Input placeholder="Price" value={newProduct.price} onChange={(e)=>setNewProduct({...newProduct,price:e.target.value})}/>
+            <Input placeholder="Category" value={newProduct.category} onChange={(e)=>setNewProduct({...newProduct,category:e.target.value})}/>
+            <Input placeholder="Image URL" value={newProduct.image} onChange={(e)=>setNewProduct({...newProduct,image:e.target.value})}/>
+            <Input placeholder="Description" value={newProduct.description} onChange={(e)=>setNewProduct({...newProduct,description:e.target.value})}/>
+          </div>
+
+          <Button className="mt-4" onClick={addProduct}><Plus size={16}/> Add Product</Button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-8">
+        {filtered.map((product) => (
+          <motion.div key={product.id} whileHover={{ scale: 1.05 }}>
+            <Card className="rounded-2xl shadow-lg overflow-hidden cursor-pointer">
+              <img src={product.image} className="h-52 w-full object-cover" />
+
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-lg">{product.name}</h3>
+                <p className="text-gray-500">₹{product.price}</p>
+
+                <div className="flex items-center gap-1 mt-1">
+                  <Star size={16}/> {product.rating}
+                </div>
+
+                <div className="flex gap-2 mt-4">
+                  <Button onClick={() => addToCart(product)}>Add to Cart</Button>
+                  <Button variant="outline" onClick={() => addToWishlist(product)}>Wishlist</Button>
+
+                  {isAdmin && (
+                    <Button variant="destructive" onClick={() => deleteProduct(product.id)}>
+                      <Trash size={14}/>
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {loggedIn && orders.length > 0 && (
+        <div className="p-8 bg-white m-6 rounded-2xl">
+          <h2 className="text-2xl font-bold mb-4">Your Orders</h2>
+          {orders.map((o) => (
+            <div key={o.id} className="border p-3 rounded-lg mb-3">
+              Order #{o.id} • ₹{o.total} • {o.date} • {o.payment}
+              <div className="text-sm text-blue-600">Status: {o.status}</div>
+              <div className="text-sm flex items-center gap-1 text-gray-600">
+                <Truck size={14}/> Delivery Partner: {o.partner.name} ({o.partner.phone})
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {chatOpen && (
+        <div className="fixed bottom-20 right-6 w-72 bg-white shadow-xl rounded-xl p-3">
+          <div className="h-60 overflow-y-auto text-sm mb-2">
+            {messages.map((m, i) => (
+              <div key={i} className={m.from === "bot" ? "text-blue-600" : "text-gray-800"}>{m.text}</div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input value={chatInput} onChange={(e)=>setChatInput(e.target.value)} placeholder="Ask AI..." />
+            <Button onClick={sendMessage}>Send</Button>
+          </div>
+        </div>
+      )}
+
+      <Button
+        className="fixed bottom-6 right-6 rounded-full w-14 h-14"
+        onClick={() => setChatOpen(!chatOpen)}
+      >
+        <MessageCircle />
+      </Button>
+
+      <div className="bg-black text-white text-center p-6">
+        © 2026 Home Decore Store • UPI • PhonePe • Cash on Delivery
+      </div>
+    </div>
+  );
+}
